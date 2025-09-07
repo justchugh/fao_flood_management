@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Damage Assessment Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Flood Damage Assessment Tool</h1>
+            <p>AI-powered agricultural damage analysis using SAM</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="upload">Image Upload</button>
+                <button class="tab-btn" data-tab="analysis">Analysis</button>
+                <button class="tab-btn" data-tab="financial">Financial Impact</button>
+            </div>
+
+            <!-- Tab 1: Image Upload -->
+            <div class="tab-content active" id="upload">
+                <div class="upload-section">
+                    <h2>Upload Before and After Flood Images</h2>
+                    
+                    <div class="upload-grid">
+                        <div class="upload-zone" id="upload-before">
+                            <div class="upload-area" id="before-drop">
+                                <div class="upload-icon">IMG</div>
+                                <p>Drop Before Flood Image Here</p>
+                                <button type="button" class="upload-btn" id="before-btn">Browse Files</button>
+                                <input type="file" id="before-input" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="image-preview" id="before-preview" style="display: none;">
+                                <img id="before-img" src="" alt="Before flood">
+                                <div class="image-info">
+                                    <p id="before-info">Image loaded</p>
+                                    <button class="remove-btn" id="before-remove">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-zone" id="upload-after">
+                            <div class="upload-area" id="after-drop">
+                                <div class="upload-icon">IMG</div>
+                                <p>Drop After Flood Image Here</p>
+                                <button type="button" class="upload-btn" id="after-btn">Browse Files</button>
+                                <input type="file" id="after-input" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="image-preview" id="after-preview" style="display: none;">
+                                <img id="after-img" src="" alt="After flood">
+                                <div class="image-info">
+                                    <p id="after-info">Image loaded</p>
+                                    <button class="remove-btn" id="after-remove">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="process-btn" id="process-btn" disabled>
+                            <span class="btn-icon">&gt;</span>
+                            Process Images
+                        </button>
+                        <div class="loading" id="processing-loader" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Processing images with SAM AI...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Segmentation Analysis -->
+            <div class="tab-content" id="analysis">
+                <div class="analysis-section">
+                    <h2>Segmentation Analysis Results</h2>
+                    
+                    <div class="results-header">
+                        <div class="stats-summary" id="analysis-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="parcels-count">--</span>
+                                <span class="stat-label">Parcels Detected</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="parcels-lost">--</span>
+                                <span class="stat-label">Parcels Lost</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="total-area">--</span>
+                                <span class="stat-label">Total Area (m²)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="visualization-container">
+                        <div class="viz-panel">
+                            <h3>Before Flood</h3>
+                            <div class="image-container">
+                                <canvas id="before-canvas"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="viz-panel">
+                            <h3>After Flood</h3>
+                            <div class="image-container">
+                                <canvas id="after-canvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="area-calibration-section" style="display: none;">
+                        <h3>Area Calibration</h3>
+                        <div class="calibration-info">
+                            <p>Current conversion: <span id="current-conversion">0.0771 m²/pixel</span></p>
+                            <p>To improve accuracy, select a parcel you know the actual area of and enter its real area below:</p>
+                        </div>
+                        <div class="calibration-controls">
+                            <div class="form-group">
+                                <label for="calibration-parcel">Reference Parcel ID</label>
+                                <select id="calibration-parcel">
+                                    <option value="">Select a parcel...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="actual-area">Actual Area (m²)</label>
+                                <input type="number" id="actual-area" step="0.1" placeholder="Enter real area in m²">
+                            </div>
+                            <button id="calibrate-btn" class="primary-btn" disabled>Recalibrate Areas</button>
+                        </div>
+                        <div class="loading-indicator" id="calibrating" style="display: none;">
+                            <span class="spinner"></span> Recalibrating areas...
+                        </div>
+                        <div id="calibration-results" style="display: none;">
+                            <p>✓ Areas recalibrated! New conversion factor: <span id="new-conversion"></span> m²/pixel</p>
+                        </div>
+                    </div>
+
+                    <div class="results-table-container">
+                        <h3>Parcel Change Detection</h3>
+                        <div class="table-controls">
+                            <div class="legend">
+                                <span class="legend-item present">🟢 Present</span>
+                                <span class="legend-item lost">🔴 Lost</span>
+                                <span class="legend-item minor">🟡 Minor Loss</span>
+                            </div>
+                            <button class="export-btn" id="export-results">Export Results</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parcel ID</th>
+                                        <th>Before (m²)</th>
+                                        <th>After (m²)</th>
+                                        <th>Loss %</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-tbody">
+                                    <tr>
+                                        <td colspan="5" class="no-data">No analysis data available. Please process images first.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Financial Impact -->
+            <div class="tab-content" id="financial">
+                <div class="financial-section">
+                    <h2>Financial Impact Assessment</h2>
+                    
+                    <div class="financial-form">
+                        <div class="form-section">
+                            <h3>Crop Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="crop-select">Crop Type</label>
+                                    <select id="crop-select">
+                                        <option value="">Select crop type...</option>
+                                        <option value="Sugarcane">Sugarcane (66.06 NPR/m²)</option>
+                                        <option value="Potatoes">Potatoes (40.18 NPR/m²)</option>
+                                        <option value="Jute">Jute (31.34 NPR/m²)</option>
+                                        <option value="Maize">Maize (15.18 NPR/m²)</option>
+                                        <option value="Paddy (Rice)">Paddy Rice (12.02 NPR/m²)</option>
+                                        <option value="Wheat">Wheat (6.93 NPR/m²)</option>
+                                        <option value="Lentils">Lentils (6.14 NPR/m²)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="custom-crop-revenue">Custom Revenue (NPR/m²)</label>
+                                    <input type="number" id="custom-crop-revenue" placeholder="Optional override" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Land Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="land-select">Land Type</label>
+                                    <select id="land-select">
+                                        <option value="">Select land type...</option>
+                                        <option value="Prime Agricultural (Near Road/Irrigation)">Prime Agricultural (2,950 NPR/m²)</option>
+                                        <option value="Standard Agricultural">Standard Agricultural (1,475 NPR/m²)</option>
+                                        <option value="Rural/Remote Agricultural">Rural/Remote Agricultural (590 NPR/m²)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="custom-land-value">Custom Value (NPR/m²)</label>
+                                    <input type="number" id="custom-land-value" placeholder="Optional override" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Selected Parcels for Assessment</h3>
+                            <div class="parcel-selection" id="parcel-selection">
+                                <p class="no-parcels">No parcels available. Please complete image analysis first.</p>
+                            </div>
+                        </div>
+
+                        <button class="calculate-btn" id="calculate-btn" disabled>
+                            <span class="btn-icon">$</span>
+                            Calculate Financial Impact
+                        </button>
+                    </div>
+
+                    <div class="financial-results" id="financial-results" style="display: none;">
+                        <h3>Financial Impact Report</h3>
+                        <div class="report-summary">
+                            <div class="report-item total-loss">
+                                <span class="report-value" id="total-loss-value">0 NPR</span>
+                                <span class="report-label">Total Financial Loss</span>
+                            </div>
+                            <div class="report-item crop-loss">
+                                <span class="report-value" id="crop-loss-value">0 NPR</span>
+                                <span class="report-label">Crop Revenue Loss</span>
+                            </div>
+                            <div class="report-item land-loss">
+                                <span class="report-value" id="land-loss-value">0 NPR</span>
+                                <span class="report-label">Land Value Loss</span>
+                            </div>
+                        </div>
+
+                        <div class="report-details">
+                            <div class="detail-section">
+                                <h4>Crop Impact</h4>
+                                <table class="detail-table">
+                                    <tr>
+                                        <td>Pre-flood Revenue</td>
+                                        <td id="pre-crop-revenue">0 NPR</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Post-flood Revenue</td>
+                                        <td id="post-crop-revenue">0 NPR</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>Land Impact</h4>
+                                <table class="detail-table">
+                                    <tr>
+                                        <td>Pre-flood Value</td>
+                                        <td id="pre-land-value">0 NPR</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Post-flood Value</td>
+                                        <td id="post-land-value">0 NPR</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button class="report-btn" id="generate-report">
+                            <span class="btn-icon">PDF</span>
+                            Generate PDF Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 FAO Flood Management Tool - Powered by Segment Anything Model</p>
+        </footer>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

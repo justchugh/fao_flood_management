@@ -1,0 +1,31 @@
+# Ignore Jupyter notebooks
+*.ipynb
+
+# Ignore claude readme folder
+claude_readme/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# SAM model checkpoints (large files)
+*.pth
+
+# Temporary files
+.DS_Store
+*.log
+uploads/*
+!uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary uploads
+*.tmp
