@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flood Damage Assessment Tool</title>
+    <title>FAO Flood Damage Assessment Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Flood Damage Assessment Tool</h1>
-            <p>AI-powered agricultural damage analysis using SAM</p>
+            <h1>FAO Flood Damage Assessment Tool</h1>
         </header>
 
         <!-- Tab Navigation -->
@@ -80,7 +82,7 @@
                         <div class="stats-summary" id="analysis-stats">
                             <div class="stat-item">
                                 <span class="stat-number" id="parcels-count">--</span>
-                                <span class="stat-label">Parcels Detected</span>
+                                <span class="stat-label">Segments Detected</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-number" id="water-coverage">--</span>
@@ -92,12 +94,12 @@
                             </div>
                             <div class="stat-item">
                                 <span class="stat-number" id="damaged-parcels">--</span>
-                                <span class="stat-label">Damaged Parcels</span>
+                                <span class="stat-label">Damaged Segments</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="visualization-container-2x2">
+                    <div class="visualization-container-3x2">
                         <div class="viz-panel">
                             <h3>Before Image - SAM Results</h3>
                             <div class="image-container">
@@ -125,20 +127,70 @@
                                 <canvas id="land-canvas"></canvas>
                             </div>
                         </div>
+
+                        <div class="viz-panel">
+                            <h3>Before Flood</h3>
+                            <div class="image-container">
+                                <canvas id="original-before-canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel">
+                            <h3>After Flood</h3>
+                            <div class="image-container">
+                                <canvas id="original-after-canvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="results-table-container">
+                        <h3>Flood Damage Analysis Results</h3>
+                        <div class="table-controls">
+                            <div class="legend">
+                                <span class="legend-item undamaged">🟢 Undamaged</span>
+                                <span class="legend-item light">🟡 Light</span>
+                                <span class="legend-item moderate">🟠 Moderate</span>
+                                <span class="legend-item heavy">🔴 Heavy</span>
+                            </div>
+                            <div class="controls-buttons">
+                                <button class="financial-impact-btn" id="calculate-financial-impact">Calculate Financial Impact</button>
+                                <button class="export-btn-icon" id="export-results" title="Export Results">📥</button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Segment ID</th>
+                                        <th>Original Area (m²)</th>
+                                        <th>Flooded Area (m²)</th>
+                                        <th>Remaining Area (m²)</th>
+                                        <th>Flood %</th>
+                                        <th>Damage Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-tbody">
+                                    <tr>
+                                        <td colspan="6" class="no-data">No analysis data available. Please process images first.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div class="area-calibration-section" style="display: none;">
                         <h3>Area Calibration</h3>
                         <div class="calibration-info">
                             <p>Current conversion: <span id="current-conversion">0.0771 m²/pixel</span></p>
-                            <p>Minimum parcel area detected: <span id="min-area">-- m²</span></p>
-                            <p>To improve accuracy, select a parcel you know the actual area of and enter its real area below:</p>
+                            <p>Minimum segment area detected: <span id="min-area">-- m²</span></p>
+                            <p>To improve accuracy, select a segment you know the actual area of and enter its real area below:</p>
                         </div>
                         <div class="calibration-controls">
                             <div class="form-group">
-                                <label for="calibration-parcel">Reference Parcel ID</label>
+                                <label for="calibration-parcel">Reference Segment ID</label>
                                 <select id="calibration-parcel">
-                                    <option value="">Select a parcel...</option>
+                                    <option value="">Select a segment...</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -155,38 +207,6 @@
                         </div>
                     </div>
 
-                    <div class="results-table-container">
-                        <h3>Flood Damage Analysis Results</h3>
-                        <div class="table-controls">
-                            <div class="legend">
-                                <span class="legend-item undamaged">🟢 Undamaged</span>
-                                <span class="legend-item light">🟡 Light</span>
-                                <span class="legend-item moderate">🟠 Moderate</span>
-                                <span class="legend-item heavy">🔴 Heavy</span>
-                                <span class="legend-item severe">🔴 Severe</span>
-                            </div>
-                            <button class="export-btn" id="export-results">Export Results</button>
-                        </div>
-                        <div class="table-wrapper">
-                            <table id="results-table">
-                                <thead>
-                                    <tr>
-                                        <th>Parcel ID</th>
-                                        <th>Original Area (m²)</th>
-                                        <th>Flooded Area (m²)</th>
-                                        <th>Remaining Area (m²)</th>
-                                        <th>Flood %</th>
-                                        <th>Damage Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="results-tbody">
-                                    <tr>
-                                        <td colspan="6" class="no-data">No analysis data available. Please process images first.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -239,9 +259,9 @@
                         </div>
 
                         <div class="form-section">
-                            <h3>Selected Parcels for Assessment</h3>
+                            <h3>Selected Segments for Assessment</h3>
                             <div class="parcel-selection" id="parcel-selection">
-                                <p class="no-parcels">No parcels available. Please complete image analysis first.</p>
+                                <p class="no-parcels">No segments available. Please complete image analysis first.</p>
                             </div>
                         </div>
 

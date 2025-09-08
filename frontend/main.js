@@ -4,7 +4,7 @@ const AppState = {
     beforeImage: null,
     afterImage: null,
     analysisResults: null,
-    selectedParcels: new Set(),
+    selectedSegments: new Set(),
     apiBase: 'http://localhost:8000'
 };
 
@@ -272,6 +272,18 @@ const ImageUploader = {
         if (results.visualizations.land_only) {
             this.loadImageToCanvas(landCanvas, results.visualizations.land_only);
         }
+        
+        // Load original images
+        const originalBeforeCanvas = document.getElementById('original-before-canvas');
+        const originalAfterCanvas = document.getElementById('original-after-canvas');
+        
+        if (AppState.beforeImage) {
+            this.loadImageToCanvas(originalBeforeCanvas, AppState.beforeImage);
+        }
+        
+        if (AppState.afterImage) {
+            this.loadImageToCanvas(originalAfterCanvas, AppState.afterImage);
+        }
     },
 
     loadImageToCanvas(canvas, base64Image) {
@@ -310,28 +322,24 @@ const ImageUploader = {
             
             // Set row class based on damage status
             let rowClass = 'status-undamaged';
-            let statusIcon = '[OK]';
+            let statusIcon = '🟢';
             
             switch (damage.damage_status) {
                 case 'Undamaged':
                     rowClass = 'status-undamaged';
-                    statusIcon = '[OK]';
+                    statusIcon = '🟢';
                     break;
                 case 'Lightly Damaged':
                     rowClass = 'status-light';
-                    statusIcon = '[LIGHT]';
+                    statusIcon = '🟡';
                     break;
                 case 'Moderately Damaged':
                     rowClass = 'status-moderate';
-                    statusIcon = '[MOD]';
+                    statusIcon = '🟠';
                     break;
                 case 'Heavily Damaged':
                     rowClass = 'status-heavy';
-                    statusIcon = '[HEAVY]';
-                    break;
-                case 'Severely Damaged':
-                    rowClass = 'status-severe';
-                    statusIcon = '[SEVERE]';
+                    statusIcon = '🔴';
                     break;
             }
             
@@ -339,7 +347,7 @@ const ImageUploader = {
             
             row.innerHTML = `
                 <td>
-                    <input type="checkbox" class="parcel-checkbox" value="${damage.parcel_id}">
+                    <input type="checkbox" class="segment-checkbox" value="${damage.parcel_id}">
                     ${damage.parcel_id}
                 </td>
                 <td>${utils.formatNumber(damage.original_area_m2)}</td>
@@ -352,21 +360,21 @@ const ImageUploader = {
             tbody.appendChild(row);
         });
 
-        // Setup parcel selection for financial analysis
-        this.setupParcelSelection();
+        // Setup segment selection for financial analysis
+        this.setupSegmentSelection();
     },
 
-    setupParcelSelection() {
-        const checkboxes = document.querySelectorAll('.parcel-checkbox');
+    setupSegmentSelection() {
+        const checkboxes = document.querySelectorAll('.segment-checkbox');
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
-                const parcelId = parseInt(e.target.value);
+                const segmentId = parseInt(e.target.value);
                 if (e.target.checked) {
-                    AppState.selectedParcels.add(parcelId);
+                    AppState.selectedSegments.add(segmentId);
                 } else {
-                    AppState.selectedParcels.delete(parcelId);
+                    AppState.selectedSegments.delete(segmentId);
                 }
-                FinancialCalculator.updateParcelSelection();
+                FinancialCalculator.updateSegmentSelection();
             });
         });
     },
@@ -388,18 +396,18 @@ const ImageUploader = {
         const minAreaDisplay = document.getElementById('min-area');
         minAreaDisplay.textContent = `${utils.formatNumber(minArea)} m²`;
 
-        // Populate parcel dropdown with all parcels (sorted by area)
-        const parcelSelect = document.getElementById('calibration-parcel');
-        parcelSelect.innerHTML = '<option value="">Select a parcel...</option>';
+        // Populate segment dropdown with all segments (sorted by area)
+        const segmentSelect = document.getElementById('calibration-parcel');
+        segmentSelect.innerHTML = '<option value="">Select a segment...</option>';
         
-        // Sort parcels by area for easier selection
-        const sortedParcels = [...results.damage_results].sort((a, b) => a.original_area_m2 - b.original_area_m2);
+        // Sort segments by area for easier selection
+        const sortedSegments = [...results.damage_results].sort((a, b) => a.original_area_m2 - b.original_area_m2);
         
-        sortedParcels.forEach(damage => {
+        sortedSegments.forEach(damage => {
             const option = document.createElement('option');
             option.value = damage.parcel_id;
-            option.textContent = `Parcel ${damage.parcel_id} (${utils.formatNumber(damage.original_area_m2)} m²)`;
-            parcelSelect.appendChild(option);
+            option.textContent = `Segment ${damage.parcel_id} (${utils.formatNumber(damage.original_area_m2)} m²)`;
+            segmentSelect.appendChild(option);
         });
 
         // Setup form validation
@@ -407,12 +415,12 @@ const ImageUploader = {
         const calibrateBtn = document.getElementById('calibrate-btn');
 
         const validateForm = () => {
-            const parcelSelected = parcelSelect.value !== '';
+            const segmentSelected = segmentSelect.value !== '';
             const areaEntered = actualAreaInput.value !== '' && parseFloat(actualAreaInput.value) > 0;
-            calibrateBtn.disabled = !(parcelSelected && areaEntered);
+            calibrateBtn.disabled = !(segmentSelected && areaEntered);
         };
 
-        parcelSelect.addEventListener('change', validateForm);
+        segmentSelect.addEventListener('change', validateForm);
         actualAreaInput.addEventListener('input', validateForm);
 
         // Setup calibration button
@@ -423,7 +431,7 @@ const ImageUploader = {
     },
 
     async performCalibration() {
-        const parcelId = parseInt(document.getElementById('calibration-parcel').value);
+        const segmentId = parseInt(document.getElementById('calibration-parcel').value);
         const actualArea = parseFloat(document.getElementById('actual-area').value);
 
         try {
@@ -435,7 +443,7 @@ const ImageUploader = {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    parcel_id: parcelId,
+                    parcel_id: segmentId,
                     actual_area_m2: actualArea,
                     analysis_results: AppState.analysisResults
                 })
@@ -494,24 +502,33 @@ const FinancialCalculator = {
         });
     },
 
-    updateParcelSelection() {
-        const parcelSelection = document.getElementById('parcel-selection');
+    updateSegmentSelection() {
+        const segmentSelection = document.getElementById('parcel-selection');
         
-        if (AppState.selectedParcels.size === 0) {
-            parcelSelection.innerHTML = '<p class="no-parcels">No parcels selected for assessment.</p>';
+        if (AppState.selectedSegments.size === 0) {
+            segmentSelection.innerHTML = '<p class="no-segments">No segments selected for assessment.</p>';
         } else {
-            const selectedList = Array.from(AppState.selectedParcels).map(id => {
+            const selectedList = Array.from(AppState.selectedSegments).map(id => {
                 const damage = AppState.analysisResults.damage_results.find(d => d.parcel_id === id);
                 return `
-                    <div class="selected-parcel">
-                        <span>Parcel ${id}</span>
-                        <span>Original: ${utils.formatNumber(damage.original_area_m2)} m²</span>
-                        <span>Remaining: ${utils.formatNumber(damage.remaining_area_m2)} m²</span>
-                    </div>
-                `;
+                    <div class="segment-selection-item selected">
+                        <div class="segment-info">
+                            <div class="segment-title">Segment ${id}</div>
+                            <div class="segment-details">
+                                <div class="segment-detail-item">
+                                    <span class="detail-label">Original:</span>
+                                    <span class="detail-value">${damage.original_area_m2.toFixed(1)} m²</span>
+                                </div>
+                                <div class="segment-detail-item">
+                                    <span class="detail-label">Remaining:</span>
+                                    <span class="detail-value">${damage.remaining_area_m2.toFixed(1)} m²</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
             }).join('');
             
-            parcelSelection.innerHTML = selectedList;
+            segmentSelection.innerHTML = selectedList;
         }
         
         this.updateCalculateButton();
@@ -521,9 +538,9 @@ const FinancialCalculator = {
         const calculateBtn = document.getElementById('calculate-btn');
         const cropSelected = document.getElementById('crop-select').value;
         const landSelected = document.getElementById('land-select').value;
-        const parcelsSelected = AppState.selectedParcels.size > 0;
+        const segmentsSelected = AppState.selectedSegments.size > 0;
         
-        calculateBtn.disabled = !(cropSelected && landSelected && parcelsSelected);
+        calculateBtn.disabled = !(cropSelected && landSelected && segmentsSelected);
     },
 
     async calculateFinancialImpact() {
@@ -532,18 +549,18 @@ const FinancialCalculator = {
         const customCropRevenue = parseFloat(document.getElementById('custom-crop-revenue').value) || null;
         const customLandValue = parseFloat(document.getElementById('custom-land-value').value) || null;
 
-        if (AppState.selectedParcels.size === 0) {
-            utils.showError('Please select at least one parcel for assessment');
+        if (AppState.selectedSegments.size === 0) {
+            utils.showError('Please select at least one segment for assessment');
             return;
         }
 
         try {
-            // Calculate total areas for selected parcels
+            // Calculate total areas for selected segments
             let totalPreFloodArea = 0;
             let totalPostFloodArea = 0;
 
-            AppState.selectedParcels.forEach(parcelId => {
-                const damage = AppState.analysisResults.damage_results.find(d => d.parcel_id === parcelId);
+            AppState.selectedSegments.forEach(segmentId => {
+                const damage = AppState.analysisResults.damage_results.find(d => d.parcel_id === segmentId);
                 if (damage) {
                     totalPreFloodArea += damage.original_area_m2;
                     totalPostFloodArea += damage.remaining_area_m2;
@@ -603,6 +620,7 @@ const ExportManager = {
     init() {
         const exportBtn = document.getElementById('export-results');
         const reportBtn = document.getElementById('generate-report');
+        const financialImpactBtn = document.getElementById('calculate-financial-impact');
         
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportResults());
@@ -610,6 +628,13 @@ const ExportManager = {
         
         if (reportBtn) {
             reportBtn.addEventListener('click', () => this.generateReport());
+        }
+        
+        if (financialImpactBtn) {
+            financialImpactBtn.addEventListener('click', () => {
+                // Switch to Financial Impact tab
+                TabManager.switchTab('financial');
+            });
         }
     },
 
@@ -622,12 +647,12 @@ const ExportManager = {
         const data = {
             timestamp: new Date().toISOString(),
             summary: {
-                total_parcels: AppState.analysisResults.total_parcels || AppState.analysisResults.damage_results.length,
-                parcels_damaged: AppState.analysisResults.damage_results.filter(d => d.damage_status !== 'Undamaged').length,
+                total_segments: AppState.analysisResults.total_parcels || AppState.analysisResults.damage_results.length,
+                segments_damaged: AppState.analysisResults.damage_results.filter(d => d.damage_status !== 'Undamaged').length,
                 total_area_before: AppState.analysisResults.total_areas?.original_m2 || AppState.analysisResults.damage_results.reduce((sum, d) => sum + d.original_area_m2, 0),
                 total_area_after: AppState.analysisResults.total_areas?.remaining_m2 || AppState.analysisResults.damage_results.reduce((sum, d) => sum + d.remaining_area_m2, 0)
             },
-            parcels: AppState.analysisResults.damage_results
+            segments: AppState.analysisResults.damage_results
         };
 
         this.downloadJSON(data, 'flood-analysis-results.json');
@@ -673,8 +698,8 @@ const ExportManager = {
                 
                 <div class="summary">
                     <h2>Summary</h2>
-                    <p><strong>Total Parcels Analyzed:</strong> ${results.total_parcels || results.damage_results.length}</p>
-                    <p><strong>Damaged Parcels:</strong> ${results.damage_results.filter(d => d.damage_status !== 'Undamaged').length}</p>
+                    <p><strong>Total Segments Analyzed:</strong> ${results.total_parcels || results.damage_results.length}</p>
+                    <p><strong>Damaged Segments:</strong> ${results.damage_results.filter(d => d.damage_status !== 'Undamaged').length}</p>
                     <p><strong>Water Coverage:</strong> ${results.water_coverage_percentage || 0}%</p>
                     <p><strong>Total Original Area:</strong> ${utils.formatNumber(results.total_areas?.original_m2 || results.damage_results.reduce((sum, d) => sum + d.original_area_m2, 0))} m²</p>
                     <p><strong>Total Remaining Area:</strong> ${utils.formatNumber(results.total_areas?.remaining_m2 || results.damage_results.reduce((sum, d) => sum + d.remaining_area_m2, 0))} m²</p>
@@ -684,7 +709,7 @@ const ExportManager = {
                 <table>
                     <thead>
                         <tr>
-                            <th>Parcel ID</th>
+                            <th>Segment ID</th>
                             <th>Original (m²)</th>
                             <th>Flooded (m²)</th>
                             <th>Remaining (m²)</th>

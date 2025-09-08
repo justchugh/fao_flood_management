@@ -329,9 +329,7 @@ def calculate_parcel_flood_damage(before_masks, water_mask, image_shape):
         remaining_percentage = 100 - flood_percentage
         
         # Status determination
-        if flood_percentage >= 80:
-            status = "Severely Damaged"
-        elif flood_percentage >= 50:
+        if flood_percentage >= 50:
             status = "Heavily Damaged"
         elif flood_percentage >= 20:
             status = "Moderately Damaged"
@@ -375,8 +373,7 @@ def visualize_parcel_damage(image, before_masks, water_mask, damage_results, max
         'Undamaged': [0, 255, 0],        # Green
         'Lightly Damaged': [255, 255, 0], # Yellow
         'Moderately Damaged': [255, 165, 0], # Orange
-        'Heavily Damaged': [255, 69, 0],  # Red-Orange
-        'Severely Damaged': [255, 0, 0]   # Red
+        'Heavily Damaged': [255, 0, 0]    # Red
     }
     
     for i in range(min(max_parcels, len(before_masks))):
