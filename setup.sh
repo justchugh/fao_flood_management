@@ -47,19 +47,12 @@ fi
 
 # Make scripts executable
 chmod +x start_app.sh
-chmod +x start_backend.sh
-chmod +x start_frontend.sh
-chmod +x kill_app.sh
 
 echo ""
 echo "Setup complete!"
 echo ""
 echo "Usage:"
-echo "  ./start_app.sh        # Start both services (recommended)"
-echo "  ./kill_app.sh         # Stop all services"
-echo ""
-echo "Alternative (separate services):"
-echo "  ./start_backend.sh    # Start API server only (port 8000)"
-echo "  ./start_frontend.sh   # Start web interface only (port 8080)"
+echo "  ./start_app.sh        # Start both services"
+echo "  ./start_app.sh -k     # Stop all services"
 echo ""
 echo "Access the application at: http://localhost:8080"

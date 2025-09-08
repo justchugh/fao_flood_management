@@ -1,7 +1,26 @@
 #!/bin/bash
 
-# FAO Flood Damage Assessment Tool - Unified Start Script
-# This script starts both backend and frontend services
+# FAO Flood Damage Assessment Tool - Unified App Script
+# Usage: ./start_app.sh        # Start both services
+#        ./start_app.sh -k     # Kill all services
+
+# Handle kill flag
+if [[ "$1" == "-k" ]]; then
+    echo "Stopping FAO Flood Damage Assessment Tool"
+    echo "=========================================="
+    
+    # Kill processes by port
+    echo "Stopping services..."
+    lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+    lsof -ti:8080 | xargs -r kill -9 2>/dev/null || true
+    
+    # Kill by process name
+    pkill -f "python.*app.py" 2>/dev/null || true
+    pkill -f "python.*http.server" 2>/dev/null || true
+    
+    echo "All services stopped."
+    exit 0
+fi
 
 echo "Starting FAO Flood Damage Assessment Tool"
 echo "=========================================="
@@ -49,7 +68,7 @@ fi
 # Start frontend in background
 echo "Starting frontend server..."
 cd frontend
-python -m http.server 8080 &
+python -m http.server 8080 2>/dev/null &
 FRONTEND_PID=$!
 cd ..
 
@@ -71,7 +90,7 @@ echo "  Backend API:     http://localhost:8000"
 echo "  API Docs:        http://localhost:8000/docs"
 echo "  Frontend Web:    http://localhost:8080"
 echo ""
-echo "To stop all services, run: ./kill_app.sh"
+echo "To stop all services, run: ./start_app.sh -k"
 echo "Press Ctrl+C to view logs, or close terminal to run in background"
 echo ""
 

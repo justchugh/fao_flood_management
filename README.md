@@ -40,7 +40,7 @@ This will automatically:
 
 ## Usage
 
-1. Start the application (both backend and frontend):
+1. Start the application:
 ```bash
 ./start_app.sh
 ```
@@ -49,13 +49,7 @@ This will automatically:
 
 3. To stop all services:
 ```bash
-./kill_app.sh
-```
-
-### Alternative (separate services):
-```bash
-./start_backend.sh    # Start API server only
-./start_frontend.sh   # Start web interface only
+./start_app.sh -k
 ```
 
 ## Workflow
@@ -112,10 +106,7 @@ disaster_app/
 │   ├── style.css          # Styling
 │   └── banner.png         # Header image
 ├── setup.sh               # Installation script
-├── start_app.sh          # Start both services (recommended)
-├── start_backend.sh       # Backend starter
-├── start_frontend.sh      # Frontend starter
-├── kill_app.sh           # Stop services
+├── start_app.sh          # Start/stop application (./start_app.sh -k to stop)
 └── requirements.txt       # Python dependencies
 ```
 
@@ -138,8 +129,8 @@ The application can be containerized for cloud deployment on platforms like AWS,
 - Verify Python version compatibility
 
 **Port Conflicts:**
-- Use `./kill_app.sh` to stop existing processes
-- Modify ports in scripts if needed
+- Use `./start_app.sh -k` to stop existing processes
+- Modify ports in start_app.sh if needed
 
 **Virtual Environment Issues:**
 - Re-run `./setup.sh` to recreate environment
