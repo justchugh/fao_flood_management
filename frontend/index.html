@@ -29,7 +29,6 @@
                     <div class="upload-grid">
                         <div class="upload-zone" id="upload-before">
                             <div class="upload-area" id="before-drop">
-                                <div class="upload-icon">IMG</div>
                                 <p>Drop Before Flood Image Here</p>
                                 <button type="button" class="upload-btn" id="before-btn">Browse Files</button>
                                 <input type="file" id="before-input" accept="image/*" style="display: none;">
@@ -45,7 +44,6 @@
 
                         <div class="upload-zone" id="upload-after">
                             <div class="upload-area" id="after-drop">
-                                <div class="upload-icon">IMG</div>
                                 <p>Drop After Flood Image Here</p>
                                 <button type="button" class="upload-btn" id="after-btn">Browse Files</button>
                                 <input type="file" id="after-input" accept="image/*" style="display: none;">
@@ -85,28 +83,46 @@
                                 <span class="stat-label">Parcels Detected</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-number" id="parcels-lost">--</span>
-                                <span class="stat-label">Parcels Lost</span>
+                                <span class="stat-number" id="water-coverage">--</span>
+                                <span class="stat-label">Water Coverage %</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-number" id="total-area">--</span>
                                 <span class="stat-label">Total Area (m²)</span>
                             </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="damaged-parcels">--</span>
+                                <span class="stat-label">Damaged Parcels</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="visualization-container">
+                    <div class="visualization-container-2x2">
                         <div class="viz-panel">
-                            <h3>Before Flood</h3>
+                            <h3>Before Image - SAM Results</h3>
                             <div class="image-container">
-                                <canvas id="before-canvas"></canvas>
+                                <canvas id="before-sam-canvas"></canvas>
                             </div>
                         </div>
                         
                         <div class="viz-panel">
-                            <h3>After Flood</h3>
+                            <h3>Flood Damage Assessment</h3>
                             <div class="image-container">
-                                <canvas id="after-canvas"></canvas>
+                                <canvas id="damage-canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel">
+                            <h3>Hybrid Water Detection</h3>
+                            <div class="image-container">
+                                <canvas id="water-canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel">
+                            <h3>Land-Only After Image</h3>
+                            <div class="image-container">
+                                <canvas id="land-canvas"></canvas>
                             </div>
                         </div>
                     </div>
@@ -115,6 +131,7 @@
                         <h3>Area Calibration</h3>
                         <div class="calibration-info">
                             <p>Current conversion: <span id="current-conversion">0.0771 m²/pixel</span></p>
+                            <p>Minimum parcel area detected: <span id="min-area">-- m²</span></p>
                             <p>To improve accuracy, select a parcel you know the actual area of and enter its real area below:</p>
                         </div>
                         <div class="calibration-controls">
@@ -139,12 +156,14 @@
                     </div>
 
                     <div class="results-table-container">
-                        <h3>Parcel Change Detection</h3>
+                        <h3>Flood Damage Analysis Results</h3>
                         <div class="table-controls">
                             <div class="legend">
-                                <span class="legend-item present">🟢 Present</span>
-                                <span class="legend-item lost">🔴 Lost</span>
-                                <span class="legend-item minor">🟡 Minor Loss</span>
+                                <span class="legend-item undamaged">🟢 Undamaged</span>
+                                <span class="legend-item light">🟡 Light</span>
+                                <span class="legend-item moderate">🟠 Moderate</span>
+                                <span class="legend-item heavy">🔴 Heavy</span>
+                                <span class="legend-item severe">🔴 Severe</span>
                             </div>
                             <button class="export-btn" id="export-results">Export Results</button>
                         </div>
@@ -153,15 +172,16 @@
                                 <thead>
                                     <tr>
                                         <th>Parcel ID</th>
-                                        <th>Before (m²)</th>
-                                        <th>After (m²)</th>
-                                        <th>Loss %</th>
-                                        <th>Status</th>
+                                        <th>Original Area (m²)</th>
+                                        <th>Flooded Area (m²)</th>
+                                        <th>Remaining Area (m²)</th>
+                                        <th>Flood %</th>
+                                        <th>Damage Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="results-tbody">
                                     <tr>
-                                        <td colspan="5" class="no-data">No analysis data available. Please process images first.</td>
+                                        <td colspan="6" class="no-data">No analysis data available. Please process images first.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -233,21 +253,7 @@
 
                     <div class="financial-results" id="financial-results" style="display: none;">
                         <h3>Financial Impact Report</h3>
-                        <div class="report-summary">
-                            <div class="report-item total-loss">
-                                <span class="report-value" id="total-loss-value">0 NPR</span>
-                                <span class="report-label">Total Financial Loss</span>
-                            </div>
-                            <div class="report-item crop-loss">
-                                <span class="report-value" id="crop-loss-value">0 NPR</span>
-                                <span class="report-label">Crop Revenue Loss</span>
-                            </div>
-                            <div class="report-item land-loss">
-                                <span class="report-value" id="land-loss-value">0 NPR</span>
-                                <span class="report-label">Land Value Loss</span>
-                            </div>
-                        </div>
-
+                        
                         <div class="report-details">
                             <div class="detail-section">
                                 <h4>Crop Impact</h4>
@@ -275,6 +281,21 @@
                                         <td id="post-land-value">0 NPR</td>
                                     </tr>
                                 </table>
+                            </div>
+                        </div>
+
+                        <div class="report-summary">
+                            <div class="report-item total-loss">
+                                <span class="report-value" id="total-loss-value">0 NPR</span>
+                                <span class="report-label">Total Financial Loss</span>
+                            </div>
+                            <div class="report-item crop-loss">
+                                <span class="report-value" id="crop-loss-value">0 NPR</span>
+                                <span class="report-label">Crop Revenue Loss</span>
+                            </div>
+                            <div class="report-item land-loss">
+                                <span class="report-value" id="land-loss-value">0 NPR</span>
+                                <span class="report-label">Land Value Loss</span>
                             </div>
                         </div>
 

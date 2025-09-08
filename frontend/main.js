@@ -228,48 +228,71 @@ const ImageUploader = {
         if (!results) return;
 
         // Update stats
-        document.getElementById('parcels-count').textContent = results.masks_before_count;
-        const lostCount = results.matches.filter(m => m.status === 'Lost').length;
-        document.getElementById('parcels-lost').textContent = lostCount;
+        document.getElementById('parcels-count').textContent = results.parcels_detected;
+        document.getElementById('water-coverage').textContent = results.water_coverage_percentage + '%';
         
-        const totalArea = results.matches.reduce((sum, m) => sum + m.area_before_m2, 0);
+        const totalArea = results.total_areas.original_m2;
         document.getElementById('total-area').textContent = utils.formatNumber(totalArea);
+        
+        const damagedCount = results.damage_results.filter(d => d.damage_status !== 'Undamaged').length;
+        document.getElementById('damaged-parcels').textContent = damagedCount;
 
-        // Update visualizations
+        // Update 4 visualizations
         this.updateVisualizations();
 
         // Update results table
         this.updateResultsTable();
         
-        // Show and setup area calibration
+        // Show and setup area calibration if needed
         this.setupAreaCalibration();
     },
 
     updateVisualizations() {
         const results = AppState.analysisResults;
-        if (!results) return;
+        if (!results || !results.visualizations) return;
 
-        // Update canvases with visualization images
-        const beforeCanvas = document.getElementById('before-canvas');
-        const afterCanvas = document.getElementById('after-canvas');
+        // Update all 4 canvases with new visualization images
+        const beforeSamCanvas = document.getElementById('before-sam-canvas');
+        const damageCanvas = document.getElementById('damage-canvas');
+        const waterCanvas = document.getElementById('water-canvas');
+        const landCanvas = document.getElementById('land-canvas');
         
-        if (results.before_visualization) {
-            this.loadImageToCanvas(beforeCanvas, results.before_visualization);
+        if (results.visualizations.before_sam_results) {
+            this.loadImageToCanvas(beforeSamCanvas, results.visualizations.before_sam_results);
         }
         
-        if (results.after_visualization) {
-            this.loadImageToCanvas(afterCanvas, results.after_visualization);
+        if (results.visualizations.flood_damage_assessment) {
+            this.loadImageToCanvas(damageCanvas, results.visualizations.flood_damage_assessment);
+        }
+        
+        if (results.visualizations.water_detection) {
+            this.loadImageToCanvas(waterCanvas, results.visualizations.water_detection);
+        }
+        
+        if (results.visualizations.land_only) {
+            this.loadImageToCanvas(landCanvas, results.visualizations.land_only);
         }
     },
 
     loadImageToCanvas(canvas, base64Image) {
+        console.log('Loading image to canvas:', canvas?.id, 'Image data length:', base64Image?.length);
+        if (!canvas || !base64Image) {
+            console.error('Missing canvas or image data:', canvas?.id, !!base64Image);
+            return;
+        }
+        
         const ctx = canvas.getContext('2d');
         const img = new Image();
         
         img.onload = () => {
+            console.log('Image loaded successfully:', canvas.id, img.width, img.height);
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
+        };
+        
+        img.onerror = (e) => {
+            console.error('Failed to load image for canvas:', canvas.id, e);
         };
         
         img.src = base64Image;
@@ -277,27 +300,53 @@ const ImageUploader = {
 
     updateResultsTable() {
         const results = AppState.analysisResults;
-        if (!results) return;
+        if (!results || !results.damage_results) return;
 
         const tbody = document.getElementById('results-tbody');
         tbody.innerHTML = '';
 
-        results.matches.forEach(match => {
+        results.damage_results.forEach(damage => {
             const row = document.createElement('tr');
-            row.className = match.status === 'Lost' ? 'status-lost' : 'status-present';
             
-            const statusIcon = match.status === 'Lost' ? '🔴' : 
-                             match.loss_percentage > 20 ? '🟡' : '🟢';
+            // Set row class based on damage status
+            let rowClass = 'status-undamaged';
+            let statusIcon = '[OK]';
+            
+            switch (damage.damage_status) {
+                case 'Undamaged':
+                    rowClass = 'status-undamaged';
+                    statusIcon = '[OK]';
+                    break;
+                case 'Lightly Damaged':
+                    rowClass = 'status-light';
+                    statusIcon = '[LIGHT]';
+                    break;
+                case 'Moderately Damaged':
+                    rowClass = 'status-moderate';
+                    statusIcon = '[MOD]';
+                    break;
+                case 'Heavily Damaged':
+                    rowClass = 'status-heavy';
+                    statusIcon = '[HEAVY]';
+                    break;
+                case 'Severely Damaged':
+                    rowClass = 'status-severe';
+                    statusIcon = '[SEVERE]';
+                    break;
+            }
+            
+            row.className = rowClass;
             
             row.innerHTML = `
                 <td>
-                    <input type="checkbox" class="parcel-checkbox" value="${match.parcel_id}">
-                    ${match.parcel_id}
+                    <input type="checkbox" class="parcel-checkbox" value="${damage.parcel_id}">
+                    ${damage.parcel_id}
                 </td>
-                <td>${utils.formatNumber(match.area_before_m2)}</td>
-                <td>${utils.formatNumber(match.area_after_m2)}</td>
-                <td>${utils.formatNumber(match.loss_percentage)}%</td>
-                <td>${statusIcon} ${match.status}</td>
+                <td>${utils.formatNumber(damage.original_area_m2)}</td>
+                <td>${utils.formatNumber(damage.flooded_area_m2)}</td>
+                <td>${utils.formatNumber(damage.remaining_area_m2)}</td>
+                <td>${utils.formatNumber(damage.flood_percentage)}%</td>
+                <td>${statusIcon} ${damage.damage_status}</td>
             `;
             
             tbody.appendChild(row);
@@ -324,7 +373,7 @@ const ImageUploader = {
 
     setupAreaCalibration() {
         const results = AppState.analysisResults;
-        if (!results || !results.matches) return;
+        if (!results || !results.damage_results) return;
 
         // Show calibration section
         const calibrationSection = document.querySelector('.area-calibration-section');
@@ -334,14 +383,22 @@ const ImageUploader = {
         const currentConversion = document.getElementById('current-conversion');
         currentConversion.textContent = `${results.conversion_factor || 0.0771} m²/pixel`;
 
-        // Populate parcel dropdown with first 10 parcels
+        // Calculate and display minimum area
+        const minArea = Math.min(...results.damage_results.map(d => d.original_area_m2));
+        const minAreaDisplay = document.getElementById('min-area');
+        minAreaDisplay.textContent = `${utils.formatNumber(minArea)} m²`;
+
+        // Populate parcel dropdown with all parcels (sorted by area)
         const parcelSelect = document.getElementById('calibration-parcel');
         parcelSelect.innerHTML = '<option value="">Select a parcel...</option>';
         
-        results.matches.slice(0, 10).forEach(match => {
+        // Sort parcels by area for easier selection
+        const sortedParcels = [...results.damage_results].sort((a, b) => a.original_area_m2 - b.original_area_m2);
+        
+        sortedParcels.forEach(damage => {
             const option = document.createElement('option');
-            option.value = match.parcel_id;
-            option.textContent = `Parcel ${match.parcel_id} (${match.area_before_m2} m²)`;
+            option.value = damage.parcel_id;
+            option.textContent = `Parcel ${damage.parcel_id} (${utils.formatNumber(damage.original_area_m2)} m²)`;
             parcelSelect.appendChild(option);
         });
 
@@ -444,12 +501,12 @@ const FinancialCalculator = {
             parcelSelection.innerHTML = '<p class="no-parcels">No parcels selected for assessment.</p>';
         } else {
             const selectedList = Array.from(AppState.selectedParcels).map(id => {
-                const match = AppState.analysisResults.matches.find(m => m.parcel_id === id);
+                const damage = AppState.analysisResults.damage_results.find(d => d.parcel_id === id);
                 return `
                     <div class="selected-parcel">
                         <span>Parcel ${id}</span>
-                        <span>Before: ${utils.formatNumber(match.area_before_m2)} m²</span>
-                        <span>After: ${utils.formatNumber(match.area_after_m2)} m²</span>
+                        <span>Original: ${utils.formatNumber(damage.original_area_m2)} m²</span>
+                        <span>Remaining: ${utils.formatNumber(damage.remaining_area_m2)} m²</span>
                     </div>
                 `;
             }).join('');
@@ -486,10 +543,10 @@ const FinancialCalculator = {
             let totalPostFloodArea = 0;
 
             AppState.selectedParcels.forEach(parcelId => {
-                const match = AppState.analysisResults.matches.find(m => m.parcel_id === parcelId);
-                if (match) {
-                    totalPreFloodArea += match.area_before_m2;
-                    totalPostFloodArea += match.area_after_m2;
+                const damage = AppState.analysisResults.damage_results.find(d => d.parcel_id === parcelId);
+                if (damage) {
+                    totalPreFloodArea += damage.original_area_m2;
+                    totalPostFloodArea += damage.remaining_area_m2;
                 }
             });
 
@@ -565,12 +622,12 @@ const ExportManager = {
         const data = {
             timestamp: new Date().toISOString(),
             summary: {
-                total_parcels: AppState.analysisResults.masks_before_count,
-                parcels_lost: AppState.analysisResults.matches.filter(m => m.status === 'Lost').length,
-                total_area_before: AppState.analysisResults.matches.reduce((sum, m) => sum + m.area_before_m2, 0),
-                total_area_after: AppState.analysisResults.matches.reduce((sum, m) => sum + m.area_after_m2, 0)
+                total_parcels: AppState.analysisResults.total_parcels || AppState.analysisResults.damage_results.length,
+                parcels_damaged: AppState.analysisResults.damage_results.filter(d => d.damage_status !== 'Undamaged').length,
+                total_area_before: AppState.analysisResults.total_areas?.original_m2 || AppState.analysisResults.damage_results.reduce((sum, d) => sum + d.original_area_m2, 0),
+                total_area_after: AppState.analysisResults.total_areas?.remaining_m2 || AppState.analysisResults.damage_results.reduce((sum, d) => sum + d.remaining_area_m2, 0)
             },
-            parcels: AppState.analysisResults.matches
+            parcels: AppState.analysisResults.damage_results
         };
 
         this.downloadJSON(data, 'flood-analysis-results.json');
@@ -616,31 +673,34 @@ const ExportManager = {
                 
                 <div class="summary">
                     <h2>Summary</h2>
-                    <p><strong>Total Parcels Analyzed:</strong> ${results.masks_before_count}</p>
-                    <p><strong>Parcels Lost:</strong> ${results.matches.filter(m => m.status === 'Lost').length}</p>
-                    <p><strong>Total Area Before:</strong> ${utils.formatNumber(results.matches.reduce((sum, m) => sum + m.area_before_m2, 0))} m²</p>
-                    <p><strong>Total Area After:</strong> ${utils.formatNumber(results.matches.reduce((sum, m) => sum + m.area_after_m2, 0))} m²</p>
+                    <p><strong>Total Parcels Analyzed:</strong> ${results.total_parcels || results.damage_results.length}</p>
+                    <p><strong>Damaged Parcels:</strong> ${results.damage_results.filter(d => d.damage_status !== 'Undamaged').length}</p>
+                    <p><strong>Water Coverage:</strong> ${results.water_coverage_percentage || 0}%</p>
+                    <p><strong>Total Original Area:</strong> ${utils.formatNumber(results.total_areas?.original_m2 || results.damage_results.reduce((sum, d) => sum + d.original_area_m2, 0))} m²</p>
+                    <p><strong>Total Remaining Area:</strong> ${utils.formatNumber(results.total_areas?.remaining_m2 || results.damage_results.reduce((sum, d) => sum + d.remaining_area_m2, 0))} m²</p>
                 </div>
                 
-                <h2>Parcel Details</h2>
+                <h2>Flood Damage Details</h2>
                 <table>
                     <thead>
                         <tr>
                             <th>Parcel ID</th>
-                            <th>Before (m²)</th>
-                            <th>After (m²)</th>
-                            <th>Loss %</th>
-                            <th>Status</th>
+                            <th>Original (m²)</th>
+                            <th>Flooded (m²)</th>
+                            <th>Remaining (m²)</th>
+                            <th>Flood %</th>
+                            <th>Damage Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${results.matches.map(match => `
+                        ${results.damage_results.map(damage => `
                             <tr>
-                                <td>${match.parcel_id}</td>
-                                <td>${utils.formatNumber(match.area_before_m2)}</td>
-                                <td>${utils.formatNumber(match.area_after_m2)}</td>
-                                <td>${utils.formatNumber(match.loss_percentage)}%</td>
-                                <td>${match.status}</td>
+                                <td>${damage.parcel_id}</td>
+                                <td>${utils.formatNumber(damage.original_area_m2)}</td>
+                                <td>${utils.formatNumber(damage.flooded_area_m2)}</td>
+                                <td>${utils.formatNumber(damage.remaining_area_m2)}</td>
+                                <td>${utils.formatNumber(damage.flood_percentage)}%</td>
+                                <td>${damage.damage_status}</td>
                             </tr>
                         `).join('')}
                     </tbody>
