@@ -210,7 +210,6 @@ const ImageUploader = {
 
             // Update UI
             this.updateAnalysisTab();
-            utils.showSuccess('Images processed successfully!');
             
             // Switch to analysis tab
             TabManager.switchTab('analysis');
@@ -239,6 +238,9 @@ const ImageUploader = {
 
         // Update 4 visualizations
         this.updateVisualizations();
+        
+        // Add click listeners to canvases for zoom functionality
+        ImageZoom.addCanvasListeners();
 
         // Update results table
         this.updateResultsTable();
@@ -396,12 +398,12 @@ const ImageUploader = {
         const minAreaDisplay = document.getElementById('min-area');
         minAreaDisplay.textContent = `${utils.formatNumber(minArea)} m²`;
 
-        // Populate segment dropdown with all segments (sorted by area)
+        // Populate segment dropdown with all segments (sorted by ID)
         const segmentSelect = document.getElementById('calibration-parcel');
         segmentSelect.innerHTML = '<option value="">Select a segment...</option>';
         
-        // Sort segments by area for easier selection
-        const sortedSegments = [...results.damage_results].sort((a, b) => a.original_area_m2 - b.original_area_m2);
+        // Sort segments by ID in ascending order
+        const sortedSegments = [...results.damage_results].sort((a, b) => a.parcel_id - b.parcel_id);
         
         sortedSegments.forEach(damage => {
             const option = document.createElement('option');
@@ -748,6 +750,84 @@ const ExportManager = {
     }
 };
 
+// Image Zoom Modal functionality
+const ImageZoom = {
+    init() {
+        const modal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const closeButton = document.getElementById('modal-close');
+        
+        // Add click listeners to all canvas elements
+        this.addCanvasListeners();
+        
+        // Close modal on close button click
+        closeButton.addEventListener('click', () => {
+            this.closeModal();
+        });
+        
+        // Close modal on overlay click (outside image)
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.classList.contains('modal-overlay')) {
+                this.closeModal();
+            }
+        });
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display !== 'none') {
+                this.closeModal();
+            }
+        });
+    },
+    
+    addCanvasListeners() {
+        // Get all canvas elements in the visualization area
+        const canvases = document.querySelectorAll('canvas');
+        
+        canvases.forEach(canvas => {
+            canvas.addEventListener('click', () => {
+                this.openModal(canvas);
+            });
+        });
+    },
+    
+    openModal(canvas) {
+        const modal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        
+        // Convert canvas to data URL for display
+        const imageDataURL = canvas.toDataURL('image/png');
+        
+        modalImage.src = imageDataURL;
+        modalImage.alt = canvas.getAttribute('id') || 'Visualization';
+        
+        // Show modal with animation
+        modal.style.display = 'flex';
+        modal.classList.remove('hide');
+        modal.classList.add('show');
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    },
+    
+    closeModal() {
+        const modal = document.getElementById('image-modal');
+        
+        // Add hide animation
+        modal.classList.remove('show');
+        modal.classList.add('hide');
+        
+        // Hide modal after animation
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('hide');
+        }, 300);
+        
+        // Restore body scroll
+        document.body.style.overflow = 'auto';
+    }
+};
+
 // Application initialization
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Flood Damage Assessment Tool - Initializing...');
@@ -757,6 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ImageUploader.init();
     FinancialCalculator.init();
     ExportManager.init();
+    ImageZoom.init();
     
     console.log('Application initialized successfully');
     

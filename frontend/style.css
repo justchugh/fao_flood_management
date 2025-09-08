@@ -74,11 +74,8 @@ body {
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
     background: var(--bg-card);
     min-height: 100vh;
-    box-shadow: var(--shadow-xl);
     position: relative;
 }
 
@@ -108,7 +105,7 @@ header::before {
 }
 
 header h1 {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     font-weight: 700;
     margin: 0;
     letter-spacing: -0.025em;
@@ -138,7 +135,7 @@ header h1 {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.4rem;
     font-weight: 500;
     color: var(--text-secondary);
     transition: all 0.2s ease-in-out;
@@ -184,6 +181,12 @@ header h1 {
 }
 
 /* Upload Section - Card Based Design */
+.upload-section {
+    background: var(--bg-primary);
+    padding: var(--space-xl);
+    margin: var(--space-lg) 0;
+}
+
 .upload-section h2 {
     text-align: center;
     margin-bottom: var(--space-xl);
@@ -408,11 +411,11 @@ header h1 {
     letter-spacing: 0.05em;
 }
 
-/* Visualization Grid - 2x2 Layout */
+/* Visualization Grid - Responsive Layout */
 .visualization-container-3x2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: var(--space-lg);
     margin-bottom: var(--space-xl);
 }
@@ -1131,6 +1134,14 @@ footer {
         grid-template-columns: 1fr;
         grid-template-rows: repeat(6, 1fr);
     }
+}
+
+/* Tablet responsive layout */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .visualization-container-3x2 {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }
     
     .original-images-grid {
         grid-template-columns: 1fr;
@@ -1183,6 +1194,112 @@ footer {
     
     .legend {
         justify-content: center;
+    }
+}
+
+/* Image Zoom Modal */
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+}
+
+.modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#modal-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--text-white);
+    color: var(--text-primary);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.2s ease-in-out;
+    z-index: 1001;
+}
+
+.modal-close:hover {
+    background: var(--color-secondary);
+    color: var(--text-white);
+    transform: scale(1.1);
+}
+
+/* Make canvas elements clickable */
+canvas {
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+}
+
+canvas:hover {
+    opacity: 0.9;
+}
+
+/* Modal animations */
+.image-modal.show {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.image-modal.hide {
+    animation: fadeOut 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
     }
 }
 

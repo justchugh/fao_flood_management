@@ -19,7 +19,7 @@ if [ -f "venv/bin/activate" ]; then
     source venv/bin/activate
     echo "Virtual environment activated"
 else
-    echo "Virtual environment not found. Run: python3 -m venv venv && source venv/bin/activate && pip install -r backend/requirements.txt"
+    echo "Virtual environment not found. Run: ./setup.sh"
     exit 1
 fi
 

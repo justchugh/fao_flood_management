@@ -1,116 +1,102 @@
-# 🌊 Flood Damage Assessment Tool
+# FAO Flood Damage Assessment Tool
 
-AI-powered agricultural damage analysis using Segment Anything Model (SAM) for before/after flood imagery comparison and financial impact calculation.
+An AI-powered web application for assessing agricultural flood damage using satellite imagery and the Segment Anything Model (SAM). This tool helps organizations quantify flood impact on agricultural land and calculate financial losses.
 
 ## Features
 
-- **Image Upload**: Upload before and after flood images
-- **AI Segmentation**: Automatic parcel detection using SAM ViT-H model
-- **Change Detection**: IoU-based comparison to identify lost/damaged areas
-- **Financial Analysis**: Calculate crop revenue and land value losses in NPR
-- **Export Results**: Generate reports and export analysis data
+- **AI Image Segmentation**: Uses Meta's SAM model for precise agricultural plot identification
+- **Flood Damage Analysis**: Compares before/after images to assess damage levels
+- **Financial Impact Calculation**: Estimates crop and land value losses in NPR
+- **Interactive Visualizations**: View segmented areas, damage maps, and water detection
+- **Export Capabilities**: Generate PDF reports and export analysis data
+- **Area Calibration**: Fine-tune measurements using known reference areas
 
-## Quick Start
-
-### Prerequisites
+## System Requirements
 
 - Python 3.8 or higher
-- Node.js (for development server, optional)
-- At least 8GB RAM (for SAM model)
-- CUDA GPU recommended (optional but faster)
+- 8GB+ RAM (recommended for SAM model)
+- 4GB free disk space (for model files)
+- Modern web browser
+- Internet connection (for model download)
 
-### Installation
+## Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/justchugh/fao_flood_management.git
-   cd fao_flood_management
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/disaster_app.git
+cd disaster_app
+```
 
-2. **Set up Python environment**:
-   ```bash
-   cd backend
-   python -m venv venv
-   
-   # On Windows:
-   venv\Scripts\activate
-   
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
+2. Run the setup script:
+```bash
+./setup.sh
+```
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Download SAM model** (2.6GB):
-   ```bash
-   # Create models directory
-   mkdir -p models
-   
-   # Download ViT-H checkpoint
-   wget -O models/sam_vit_h_4b8939.pth https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
-   ```
-
-5. **Run the backend**:
-   ```bash
-   python app.py
-   ```
-
-6. **Open the frontend**:
-   - Open `frontend/index.html` in your web browser
-   - Or serve with a local server:
-     ```bash
-     cd ../frontend
-     python -m http.server 3000
-     # Then visit http://localhost:3000
-     ```
+This will automatically:
+- Create a virtual environment
+- Install all Python dependencies
+- Download the SAM model (2.4GB)
+- Set up the application
 
 ## Usage
 
-### 1. Image Upload
-- Upload before and after flood images (JPG, PNG supported)
-- Images are processed locally - no data leaves your system
+1. Start the backend API server:
+```bash
+./start_backend.sh
+```
 
-### 2. Analysis
-- Click "Process Images" to run SAM segmentation
-- View detected parcels with IDs and status (Present/Lost)
-- Review change detection results
+2. In a new terminal, start the frontend:
+```bash
+./start_frontend.sh
+```
 
-### 3. Financial Impact
-- Select parcels for assessment
-- Choose crop type and land classification
-- Get detailed financial loss calculation in NPR
+3. Access the application at: http://localhost:8080
+
+4. To stop all services:
+```bash
+./kill_app.sh
+```
+
+## Workflow
+
+1. **Upload Images**: Provide before and after flood satellite images
+2. **Process Analysis**: AI segments agricultural plots and detects flood areas
+3. **Review Results**: Examine damage assessment and statistics
+4. **Financial Impact**: Calculate losses using crop and land values
+5. **Export Report**: Generate comprehensive PDF reports
 
 ## API Endpoints
 
-### Backend Server (http://localhost:8000)
-
-- `GET /health` - Check server and SAM model status
-- `POST /segment` - Process before/after images
-- `POST /calculate` - Calculate financial impact
-- `GET /crop-types` - Available crop types and revenues
-- `GET /land-types` - Available land types and values
+- `GET /health` - Check API status and model availability
+- `POST /segment` - Process image segmentation and damage analysis
+- `POST /calibrate` - Recalibrate area measurements
+- `GET /docs` - Interactive API documentation
 
 ## Configuration
 
-### Crop Revenues (NPR per m²)
-- Sugarcane: 66.06
-- Potatoes: 40.18
-- Jute: 31.34
-- Maize: 15.18
-- Paddy Rice: 12.02
-- Wheat: 6.93
-- Lentils: 6.14
+The application uses predefined crop and land values for Nepal (NPR):
 
-### Land Values (NPR per m²)
-- Prime Agricultural: 2,950.00
-- Standard Agricultural: 1,475.00
-- Rural/Remote Agricultural: 590.00
+**Crop Revenue (per m²):**
+- Sugarcane: 66.06 NPR/m²
+- Potatoes: 40.18 NPR/m²
+- Jute: 31.34 NPR/m²
+- Maize: 15.18 NPR/m²
+- Rice: 12.02 NPR/m²
+- Wheat: 6.93 NPR/m²
+- Lentils: 6.14 NPR/m²
 
-### Area Conversion
-- Conversion factor: 0.0771 m²/pixel (calibrated from reference data)
+**Land Values (per m²):**
+- Prime Agricultural: 2,950 NPR/m²
+- Standard Agricultural: 1,475 NPR/m²
+- Rural/Remote: 590 NPR/m²
+
+## Technology Stack
+
+- **Backend**: Python, FastAPI, PyTorch
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **AI Model**: Meta SAM (Segment Anything Model)
+- **Computer Vision**: OpenCV, PIL
+- **Web Server**: Uvicorn
 
 ## File Structure
 
@@ -118,64 +104,49 @@ AI-powered agricultural damage analysis using Segment Anything Model (SAM) for b
 disaster_app/
 ├── backend/
 │   ├── app.py              # FastAPI server
-│   ├── requirements.txt    # Python dependencies
-│   └── models/
-│       └── sam_vit_h_4b8939.pth  # SAM model (download required)
+│   └── models/             # AI model files
 ├── frontend/
-│   ├── index.html          # Main application
-│   ├── main.js            # JavaScript functionality
-│   └── style.css          # Styling
-├── uploads/               # Temporary image storage
-└── README.md             # This file
+│   ├── index.html          # Main interface
+│   ├── main.js            # Application logic
+│   ├── style.css          # Styling
+│   └── banner.png         # Header image
+├── setup.sh               # Installation script
+├── start_backend.sh       # Backend starter
+├── start_frontend.sh      # Frontend starter
+├── kill_app.sh           # Stop services
+└── requirements.txt       # Python dependencies
 ```
+
+## Deployment Options
+
+### Server Deployment
+1. Clone repository on server
+2. Run `./setup.sh`
+3. Configure firewall for ports 8000 and 8080
+4. Use process manager (PM2, systemd) for production
+
+### Docker Deployment
+The application can be containerized for cloud deployment on platforms like AWS, GCP, or Azure.
 
 ## Troubleshooting
 
-### Model Loading Issues
-- Ensure SAM model file exists in `backend/models/`
-- Check available RAM (model requires ~2.6GB)
-- Verify PyTorch installation with CUDA support (if using GPU)
+**Model Loading Issues:**
+- Ensure 8GB+ RAM is available
+- Check internet connection for model download
+- Verify Python version compatibility
 
-### CORS Errors
-- If accessing from different ports, update CORS settings in `app.py`
-- Use a local server instead of opening HTML directly
+**Port Conflicts:**
+- Use `./kill_app.sh` to stop existing processes
+- Modify ports in scripts if needed
 
-### Out of Memory
-- Use CPU instead of CUDA if GPU memory is insufficient
-- Process smaller images or reduce batch size
-
-## Performance
-
-### Expected Processing Times
-- Image upload: < 2 seconds
-- SAM segmentation: 15-60 seconds (depending on image size and hardware)
-- Financial calculation: < 1 second
-- Report generation: < 5 seconds
-
-### Hardware Recommendations
-- **Minimum**: 8GB RAM, CPU-only processing
-- **Recommended**: 16GB RAM, NVIDIA GPU with 8GB+ VRAM
-- **Storage**: 5GB free space (including model)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is developed for FAO flood management research purposes.
+**Virtual Environment Issues:**
+- Re-run `./setup.sh` to recreate environment
+- Ensure Python 3.8+ is installed
 
 ## Support
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review GitHub issues
-3. Create a new issue with detailed description
+For technical support or questions about deployment, please refer to the API documentation at http://localhost:8000/docs when the backend is running.
 
----
+## License
 
-**Powered by Segment Anything Model (SAM) - Meta AI Research**
+This project is developed for agricultural disaster management and assessment purposes.

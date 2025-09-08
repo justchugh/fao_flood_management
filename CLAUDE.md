@@ -1,2 +1,0 @@
-- remember and understand to keep updating each change in changelog_README.md, and dont update github until i ask. always follow planning_README.md, and whenever anything new planned and changed, update planning_README.md accordingly
-- no emoji's in codes or anywhere, remove if you find any emoji's as well

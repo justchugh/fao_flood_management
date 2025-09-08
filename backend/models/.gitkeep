@@ -1,0 +1,23 @@
+# Models Directory
+
+This directory contains AI model files for the Flood Damage Assessment Tool.
+
+## SAM Model Download
+
+The Segment Anything Model (SAM) is required for image segmentation.
+The setup script will automatically download the model file:
+
+- **File**: sam_vit_h_4b8939.pth
+- **Size**: 2.4GB
+- **Source**: https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+
+## Manual Download
+
+If automatic download fails, manually download:
+
+```bash
+cd backend/models
+wget -O sam_vit_h_4b8939.pth https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+```
+
+This file is excluded from git due to its large size (.gitignore: backend/models/*.pth)
