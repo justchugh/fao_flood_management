@@ -40,21 +40,22 @@ This will automatically:
 
 ## Usage
 
-1. Start the backend API server:
+1. Start the application (both backend and frontend):
 ```bash
-./start_backend.sh
+./start_app.sh
 ```
 
-2. In a new terminal, start the frontend:
-```bash
-./start_frontend.sh
-```
+2. Access the application at: http://localhost:8080
 
-3. Access the application at: http://localhost:8080
-
-4. To stop all services:
+3. To stop all services:
 ```bash
 ./kill_app.sh
+```
+
+### Alternative (separate services):
+```bash
+./start_backend.sh    # Start API server only
+./start_frontend.sh   # Start web interface only
 ```
 
 ## Workflow
@@ -111,6 +112,7 @@ disaster_app/
 │   ├── style.css          # Styling
 │   └── banner.png         # Header image
 ├── setup.sh               # Installation script
+├── start_app.sh          # Start both services (recommended)
 ├── start_backend.sh       # Backend starter
 ├── start_frontend.sh      # Frontend starter
 ├── kill_app.sh           # Stop services
